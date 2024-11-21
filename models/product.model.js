@@ -5,8 +5,12 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  productImages: {
-    type: [String],
+  productImage: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
     required: true,
   },
   inStock: {
@@ -17,6 +21,13 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  rating: {
+    type: Number,
+    required: true,
+    min: [0, "Rating must be at least 1"], // Minimum value is 1
+    max: [5, "Rating must be at most 5"], // Maximum value is 5
+    default: 0, // Default rating value
+  },
   discount: {
     type: Number,
   },
@@ -26,7 +37,9 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
 });
+productSchema.index({ name: "text" });
 
 const Product = mongoose.model('Product', productSchema);
+
 
 export default Product;

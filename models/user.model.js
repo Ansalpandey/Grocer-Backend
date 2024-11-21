@@ -17,18 +17,37 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    phone: {
+      type: String,
+      required: true,
+    },
     password: {
       type: String,
       required: true,
     },
+    favorites: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
+    cart: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+        },
+        quantity: {
+          type: Number,
+          default: 1,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
-
-userSchema.index({ email: 1, role: 1 }, { unique: true });
-
 
 userSchema.pre("save", function (next) {
   const user = this;
@@ -73,7 +92,6 @@ userSchema.pre("findOneAndUpdate", async function (next) {
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
-
 
 const User = mongoose.model("User", userSchema);
 
