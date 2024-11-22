@@ -1,6 +1,14 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
-
+import NodeCache from "node-cache";
+const cache = new NodeCache({
+  stdTTL: 60 * 60, // 1 hour cache
+  checkperiod: 120, // Check for expired keys every 2 minutes
+  useClones: false, // Don't clone values when getting from cache
+  deleteOnExpire: true, // Delete expired keys automatically
+  // Optionally enable statistics
+  enableStatistics: true,
+});
 const register = async (req, res) => {
   const { name, email, password, role, phone } = req.body;
 
@@ -159,35 +167,74 @@ const updateUserInfo = async (req, res) => {
     } else {
       return res.status(403).send("Unauthorized action");
     }
+
+    // Save the updated user information to the database
     await user.save();
-    res.status(200).json({ message: "User updated successfully" });
+
+    // Construct the updated user profile object
+    const updatedUserProfile = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+    };
+
+    // Generate the cache key for the user profile
+    const cacheKey = `user-profile-${req.user._id}`;
+
+    // Delete the old cache
+    cache.del(cacheKey);
+
+    // Update the cache with the new user profile
+    cache.set(cacheKey, updatedUserProfile);
+
+    res.status(200).json({ message: "User updated successfully"});
   } catch (error) {
     // Handle errors gracefully
     res.status(500).send(error.message);
   }
 };
 
+
 const getUserProfile = async (req, res) => {
   try {
-    // Fetch the user by ID
+    // Generate a unique cache key based on the user ID
+    const cacheKey = `user-profile-${req.user._id}`;
+
+    // Check if user profile is available in the cache
+    const cachedUserProfile = cache.get(cacheKey);
+    if (cachedUserProfile) {
+      console.log('Serving user profile from cache');
+      return res.status(200).json(cachedUserProfile);
+    }
+
+    // Fetch the user by ID from the database
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).send("User not found");
     }
 
-    // Return the user's profile
-    res.status(200).json({
+    // Construct the user profile object
+    const userProfile = {
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      phone: user.phone
-    });
+      phone: user.phone,
+    };
+
+    // Store the user profile in cache with the cache key
+    cache.set(cacheKey, userProfile);
+
+    // Return the user's profile
+    res.status(200).json(userProfile);
   } catch (error) {
     // Handle errors gracefully
     res.status(500).send(error.message);
   }
 };
+
 
 
 export { register, login, forgetPassword, refreshToken, updateUserInfo,getUserProfile };

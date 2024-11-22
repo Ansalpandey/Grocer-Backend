@@ -1,6 +1,17 @@
 import Product from "../models/product.model.js";
 import Category from "../models/category.model.js";
 import User from "../models/user.model.js";
+import NodeCache from "node-cache";
+
+const cache = new NodeCache({
+  stdTTL: 60 * 60, // 1 hour cache
+  checkperiod: 120, // Check for expired keys every 2 minutes
+  useClones: false, // Don't clone values when getting from cache
+  deleteOnExpire: true, // Delete expired keys automatically
+  // Optionally enable statistics
+  enableStatistics: true,
+});
+
 
 const getTopProducts = async (req, res) => {
   try {
@@ -8,6 +19,16 @@ const getTopProducts = async (req, res) => {
     const page = parseInt(req.query.page) || 1; // Default to page 1
     const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page
     const skip = (page - 1) * limit;
+
+    // Create a unique cache key based on the query
+    const cacheKey = `top-products-page-${page}-limit-${limit}`;
+
+    // Check if data is available in cache
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      console.log('Serving from cache');
+      return res.json(cachedData);
+    }
 
     // Fetch products with pagination, filtering, and sorting
     const products = await Product.find({
@@ -22,29 +43,47 @@ const getTopProducts = async (req, res) => {
       rating: { $gte: 4 },
     });
 
-    // Return paginated response
-    res.json({
+    // Construct response object
+    const responseData = {
       totalProducts, // Total number of products matching the filter
       currentPage: page,
       totalPages: Math.ceil(totalProducts / limit),
       products,
-    });
+    };
+
+    // Store the response in cache with the cache key
+    cache.set(cacheKey, responseData);
+
+    // Return the response
+    res.json(responseData);
   } catch (error) {
     res.status(500).send(error.message);
   }
 };
 
+
 const getProductDetails = async (req, res) => {
   try {
     const { productId } = req.params;
+
+    const cacheKey = `product-${productId}`;
+
+    // Check if data is available in cache
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      console.log('Serving from cache');
+      return res.json(cachedData);
+    }
 
     // Fetch the product by ID
     const product = await Product.findById(productId);
 
     if (!product) {
       return res.status(404).send("Product not found");
-    }  
+    } 
 
+    // Store the response in cache with the cache key
+    cache.set(cacheKey, product);
     res.json(product);
   } catch (error) {
     res.status(500).send(error.message);
@@ -61,6 +100,16 @@ const getProductsByCategory = async (req, res) => {
 
     if (!category) {
       return res.status(400).send("Category name is required");
+    }
+
+    // Create a unique cache key based on category, page, and limit
+    const cacheKey = `category-${category}-page-${page}-limit-${limit}`;
+
+    // Check if data is available in cache
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      console.log('Serving from cache');
+      return res.json(cachedData);
     }
 
     // Fetch categories using a case-insensitive partial match for category name
@@ -88,17 +137,24 @@ const getProductsByCategory = async (req, res) => {
       category: { $in: categoryIds }, // Match products that belong to any of the found categories
     });
 
-    // Return paginated response
-    res.json({
+    // Construct response object
+    const responseData = {
       totalProducts, // Total number of products matching the filter
       currentPage: page,
       totalPages: Math.ceil(totalProducts / limit),
       products,
-    });
+    };
+
+    // Store the response in cache with the cache key
+    cache.set(cacheKey, responseData);
+
+    // Return the response
+    res.json(responseData);
   } catch (error) {
     res.status(500).send(error.message);
   }
 };
+
 
 const getProductsBetweenPriceRange = async (req, res) => {
   try {
@@ -143,24 +199,43 @@ const searchProducts = async (req, res) => {
       return res.status(400).send("Search query is required");
     }
 
-    // Optional: Use a regex with optional wildcard support and case-insensitivity
-    // Improved regex matching to allow more flexible search
-    const regex = new RegExp(search, "i"); // Case-insensitive regex
+    // Create a unique cache key based on the search query
+    const cacheKey = `search-${search}`;
 
-    // Fetch products using a case-insensitive partial match for product name
+    // Check if data is available in cache
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      console.log('Serving search results from cache');
+      return res.json(cachedData);
+    }
+
+    // Use regex for case-insensitive partial match
+    const regex = new RegExp(search, "i");
+
+    // Fetch products using case-insensitive partial match or full-text search
     const products = await Product.find({
-      $text: { $search: search }  // Full-text search for matching products
+      $or: [
+        { name: regex }, // Case-insensitive regex match on product name
+        { description: regex }, // Optional: Match description if needed
+      ],
     }).sort({ rating: -1, createdAt: -1 });
 
-    // Return all matching products
-    res.json({
+    // Construct response object
+    const responseData = {
       totalProducts: products.length, // Total number of products matching the search
       products,
-    });
+    };
+
+    // Store the response in cache with the cache key
+    cache.set(cacheKey, responseData);
+
+    // Return the response
+    res.json(responseData);
   } catch (error) {
     res.status(500).send(error.message);
   }
 };
+
 
 const addProductToCart = async (req, res) => {
   try {
