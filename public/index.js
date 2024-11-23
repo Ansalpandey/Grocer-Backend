@@ -19,7 +19,7 @@ function onHeaderClickOutside(e) {
 
 
 function handleDownload() {
-    window.location.href = '/app-release.apk';
+    window.location.href = '/Humara Apna Bazaar.apk';
   }
 
 function responsive() {

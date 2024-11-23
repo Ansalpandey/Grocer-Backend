@@ -235,6 +235,4 @@ const getUserProfile = async (req, res) => {
   }
 };
 
-
-
 export { register, login, forgetPassword, refreshToken, updateUserInfo,getUserProfile };

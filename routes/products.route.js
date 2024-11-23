@@ -1,7 +1,7 @@
 import {
   getTopProducts,
   getProductsByCategory,
-  getProductsBetweenPriceRange,
+  getProductsBetweenPriceRangeInCategory,
   searchProducts,
   addProductToCart,
   removeProductFromCart,
@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.get("/top-products", auth, getTopProducts);
 router.get("/category", auth, getProductsByCategory);
-router.get("/price-range", auth, getProductsBetweenPriceRange);
+router.get("/price-range", auth, getProductsBetweenPriceRangeInCategory);
 router.get("/search", auth, searchProducts);
 router.post("/cart", auth, addProductToCart);
 router.delete("/cart/:productId", auth, removeProductFromCart);

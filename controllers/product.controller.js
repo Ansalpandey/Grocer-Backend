@@ -156,27 +156,51 @@ const getProductsByCategory = async (req, res) => {
 };
 
 
-const getProductsBetweenPriceRange = async (req, res) => {
+const getProductsBetweenPriceRangeInCategory = async (req, res) => {
   try {
-    // Parse query parameters
-    const minPrice = parseInt(req.query.minPrice) || 0; // Default to 0
-    const maxPrice = parseInt(req.query.maxPrice) || 200; // Default to 100000
-    const page = parseInt(req.query.page) || 1; // Default to page 1
-    const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page
+    // Set default values for query parameters
+    const DEFAULT_MIN_PRICE = 0;
+    const DEFAULT_MAX_PRICE = 200;
+    const DEFAULT_PAGE = 1;
+    const DEFAULT_LIMIT = 10;
+
+    // Parse query parameters with defaults
+    const minPrice = parseInt(req.query.minPrice) || DEFAULT_MIN_PRICE;
+    const maxPrice = parseInt(req.query.maxPrice) || DEFAULT_MAX_PRICE;
+    const page = parseInt(req.query.page) || DEFAULT_PAGE;
+    const limit = parseInt(req.query.limit) || DEFAULT_LIMIT;
+    const category = req.query.category || null; // Get category from query parameters
+
+    // Validate query parameters
+    if (minPrice < 0 || maxPrice < 0 || page < 1 || limit < 1) {
+      return res.status(400).json({
+        message: "Invalid query parameters. Ensure all values are positive.",
+      });
+    }
+    if (!category) {
+      return res.status(400).json({
+        message: "Category is required.",
+      });
+    }
+
     const skip = (page - 1) * limit;
 
-    // Fetch products with pagination, filtering, and sorting
-    const products = await Product.find({
-      price: { $gte: minPrice, $lte: maxPrice }, // Filter products with price between min and max
-    })
-      .sort({ price: 1, createdAt: -1 }) // Sort by price, then creation date
-      .skip(skip) // Skip items for previous pages
-      .limit(limit); // Limit items for the current page
-
-    // Count total products for the filter
-    const totalProducts = await Product.countDocuments({
+    // Query filters and options
+    const filter = {
       price: { $gte: minPrice, $lte: maxPrice },
-    });
+      category, // Filter by category
+    };
+    const options = {
+      sort: { price: 1, createdAt: -1 },
+      skip,
+      limit,
+    };
+
+    // Fetch products with filters and options
+    const [products, totalProducts] = await Promise.all([
+      Product.find(filter, null, options),
+      Product.countDocuments(filter),
+    ]);
 
     // Return paginated response
     res.json({
@@ -186,9 +210,15 @@ const getProductsBetweenPriceRange = async (req, res) => {
       products,
     });
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error("Error fetching products:", error);
+    res.status(500).json({
+      message: "An error occurred while fetching products.",
+      error: error.message,
+    });
   }
 };
+
+
 
 const searchProducts = async (req, res) => {
   try {
@@ -336,7 +366,7 @@ const getProductsOfCart = async (req, res) => {
 export {
   getTopProducts,
   getProductsByCategory,
-  getProductsBetweenPriceRange,
+  getProductsBetweenPriceRangeInCategory,
   searchProducts,
   addProductToCart,
   removeProductFromCart,
