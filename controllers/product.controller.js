@@ -7,8 +7,7 @@ const cache = new NodeCache({
   stdTTL: 60 * 60, // 1 hour cache
   checkperiod: 120, // Check for expired keys every 2 minutes
   useClones: false, // Don't clone values when getting from cache
-  deleteOnExpire: true, // Delete expired keys automatically
-  // Optionally enable statistics
+  deleteOnExpire: true,
   enableStatistics: true,
 });
 
