@@ -145,11 +145,11 @@ const admin = new AdminJS.default({
     },
   ],
   branding: {
-    companyName: "Humara Apna Bazaar - Dashboard",
+    companyName: "Grocer - Dashboard",
     favicon:
       "https://res.cloudinary.com/ansalpandey/image/upload/v1731832509/c3mnxwig5gsfrpuls4bw.png",
     withMadeWithLove: false,
-    logo: "https://res.cloudinary.com/ansalpandey/image/upload/v1731832509/c3mnxwig5gsfrpuls4bw.png",
+    // logo: "https://res.cloudinary.com/ansalpandey/image/upload/v1731832509/c3mnxwig5gsfrpuls4bw.png",
   },
   defaultTheme: dark.id,
   availableThemes: [dark, light, noSidebar],
