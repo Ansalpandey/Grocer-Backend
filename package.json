@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "cross-env NODE_OPTIONS=--no-warnings nodemon index.js"
+    "start": "cross-env NODE_OPTIONS=--no-warnings nodemon index"
   },
   "keywords": [],
   "author": "",
